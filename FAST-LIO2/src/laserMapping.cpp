@@ -731,6 +731,40 @@ void publish_path(const ros::Publisher pubPath) {
     }
 }
 
+bool approximately_equal(double a, double b) {
+    return fabs(a - b) < 1e-6;
+}
+
+double sign(double x) {
+    if (x > 0) return 1;
+    if (x < 0) return -1;
+    return 0;
+}
+
+decltype(auto) LogSO3(const M3D& R) {
+    auto trace = R.trace();
+    if (approximately_equal(trace, 3.0)) {
+        return V3D(0, 0, 0);
+    } else if (approximately_equal(trace, -1.0)) {
+        double theta = M_PI;
+        V3D a(0, 0, 0);
+        a(0) = sqrt((R(0, 0) + 1.0) / 2.0) * theta;
+        a(1) = sqrt((R(1, 1) + 1.0) / 2.0) * sign(R(0, 1)) * theta;
+        a(2) = sqrt((R(2, 2) + 1.0) / 2.0) * sign(R(0, 1)) * sign(R(1, 2)) * theta;
+        return a;
+    } else {
+        double theta = acos((trace - 1.0) / 2.0);
+        double s = sin(theta);
+        if (s == 0) {
+            return V3D(0, 0, 0);
+        } else {
+            return V3D((R(2, 1) - R(1, 2)) / (2 * s) * theta,
+                       (R(0, 2) - R(2, 0)) / (2 * s) * theta,
+                       (R(1, 0) - R(0, 1)) / (2 * s) * theta);
+        }
+    }
+}
+
 int main(int argc, char **argv) {
     ros::init(argc, argv, "laserMapping");
     ros::NodeHandle nh;
@@ -1041,16 +1075,30 @@ int main(int argc, char **argv) {
             MatrixXd K_(DIM_STATE, effect_feat_num);
             K_.setZero();
 
+            K_ = (H_transpose_R_inv * H_ + state.cov.inverse()).inverse() * H_transpose_R_inv;
+
             // State Update
+            auto old_state_rot = state.rot_end;
+            auto vec = (state_propagat - state);
+            auto KZ = K_ * Z_;
+            // state += KZ;
             state.rot_end = M3D::Identity();
             // Covariance Update and Reset
             MD(DIM_STATE, DIM_STATE) Jk;
+            Jk.setIdentity();
+            // auto theta = LogSO3(old_state_rot.transpose() * state.rot_end);
+            auto theta = V3D(KZ(0, 0), KZ(1, 0), KZ(2, 0));
+            M3D skew_sym_rot;
+            skew_sym_rot << SKEW_SYM_MATRX(theta);
+            Jk.block<3, 3>(0, 0) = M3D::Identity() - (1 - cos(theta.norm())) / (theta.norm() * theta.norm()) * skew_sym_rot + (theta.norm() - sin(theta.norm())) / (theta.norm() * theta.norm() * theta.norm()) * skew_sym_rot * skew_sym_rot;
+            
+            // state.cov = Jk * (I_ - K_ * H_) * state.cov * Jk.transpose();
             state.cov = state.cov;
 
             //Please note that boxplus and boxminus opraters are overloaded in include/common_lib.h,
             //So you can directly add delta_x (which is a vector) to a state, such as: state += delta_x.
             //Please note in the third formula in Page54 of the guideline, (y_k - h(x)) represents the point-to-plane distance residual, where y_k is the measurement, h(x) is the measurement model of state.
-            //Here, (y_k - h(x)) is given,, which is actually the Z_ defined in line 1001.
+            //Here, (y_k - h(x)) is given, which is actually the Z_ defined in line 1001.
             //In the second formula in Page54 of the guideline, (Hk^T * Sigma.inverse()) is given, which is the H_transpose_R_inv defined in line 999.
 
           

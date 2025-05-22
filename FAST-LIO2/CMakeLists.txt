@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(fast_lio2)
 
-
 SET(CMAKE_BUILD_TYPE "Debug")
 
 ADD_COMPILE_OPTIONS(-std=c++14 )

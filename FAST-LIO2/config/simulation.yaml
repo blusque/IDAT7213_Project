@@ -1,6 +1,6 @@
 student:
-    ID: 3035888888.0
-    Name: "FAST-LIO2"
+    ID: 3036316302.0
+    Name: "Jidong Mei"
 
 common:
     lid_topic: "/quad1_pcl_render_node/sensor_cloud"

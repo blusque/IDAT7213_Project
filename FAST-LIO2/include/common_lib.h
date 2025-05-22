@@ -145,6 +145,68 @@ struct StatesGroup
         this->vel_end = Zero3d;
     }
 
+    void checkNan() {
+        for (int i = 0; i < DIM_STATE; i++)
+        {
+            if (isnan(this->rot_end(i)))
+            {
+                // this->rot_end = M3D::Identity();
+                throw std::runtime_error("rot_end is nan");
+            }
+        }
+        for (int i = 0; i < DIM_STATE; i++)
+        {
+            if (isnan(this->pos_end(i)))
+            {
+                // this->pos_end = Zero3d;
+                throw std::runtime_error("pos_end is nan");
+            }
+        }
+        for (int i = 0; i < DIM_STATE; i++)
+        {
+            if (isnan(this->vel_end(i)))
+            {
+                // this->vel_end = Zero3d;
+                throw std::runtime_error("vel_end is nan");
+            }
+        }
+        for (int i = 0; i < DIM_STATE; i++)
+        {
+            if (isnan(this->bias_g(i)))
+            {
+                // this->bias_g = Zero3d;
+                throw std::runtime_error("bias_g is nan");
+            }
+        }
+        for (int i = 0; i < DIM_STATE; i++)
+        {
+            if (isnan(this->bias_a(i)))
+            {
+                // this->bias_a = Zero3d;
+                throw std::runtime_error("bias_a is nan");
+            }
+        }
+        for (int i = 0; i < DIM_STATE; i++)
+        {
+            if (isnan(this->gravity(i)))
+            {
+                // this->gravity = Zero3d;
+                throw std::runtime_error("gravity is nan");
+            }
+        }
+        for (int i = 0; i < DIM_STATE; i++)
+        {
+            for (int j = 0; j < DIM_STATE; j++)
+            {
+                if (isnan(this->cov(i,j)))
+                {
+                    // this->cov = MD(DIM_STATE,DIM_STATE)::Identity() * INIT_COV;
+                    throw std::runtime_error("cov is nan");
+                }
+            }
+        }
+    }
+
 	M3D rot_end;      // the estimated attitude (rotation matrix) at the end lidar point
     V3D pos_end;      // the estimated position at the end lidar point (world frame)
     V3D vel_end;      // the estimated velocity at the end lidar point (world frame)
